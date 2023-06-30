@@ -34,38 +34,58 @@ class Timeline extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            items: new DataSet([]),
+            items: null,
             groups: [],
+            options: {},
+            locale: "en",
+            timezones:"UTC",
+            styles: {},
+            onRenderComplete: () => { },
         };
-        this.locale = locale(this.props.locale || 'en')
-        this.timezone = this.props.timezone || 'UTC';
-        this.options = {
-            moment: (date) => {
-                moment.locale(this.locale);
-                if (this.timezone.toUpperCase() === 'UTC' || 
-                    this.timezone.toUpperCase() === 'GMT') {
-                    return moment(date).utc();
-                } else {
-                    return moment(date).utcOffset(this.timezone);
-                }
-            },
-            
-        }
-        this.eventsType = 
-        this.styles = this.props.styles || {};
+        this.eventsType = eventsType;
         this.containerRef = React.createRef();
         this.instance = null;
+        this.renderCompleteHandler = this.renderCompleteHandler.bind(this);
     }
 
-    getDerivedStateFromProps(nextProps, prevState) {
+    static getDerivedStateFromProps(nextProps, prevState) {
+        const { items, groups, options, locale, timezones, styles, onRenderComplete } = nextProps;
+        const _items = new DataSet(items);
+        return {
+            items: _items,
+            groups,
+            options,
+            locale,
+            timezones,
+            styles,
+            onRenderComplete,
+        };
+    }
 
+    renderCompleteHandler(callback) {
+        // StackOverflow: https://stackoverflow.com/questions/34535989/getting-a-callback-after-visjs-finishes-loading-chart
+        // The visualizations of vis.js should load synchronously so there is no need for a callback.
+        if (typeof callback === 'function') {
+            let timer = setTimeout(() => {
+                callback(this.instance);
+                clearTimeout(timer);
+            }, 0);
+        }
     }
 
     componentDidMount() {
         const { groups, options, items } = this.state;
         const _items = new DataSet(items);
         const containerDom = this.containerRef.current;
-        this.instance = new Timeline(containerDom, _items, groups, options);
+        if(!containerDom) {
+            console.error("Timeline container is not defined");
+            return;
+        } else if(!groups) {
+            this.instance = new Timeline(containerDom, _items, options);
+        } else {
+            this.instance = new Timeline(containerDom, _items, groups, options);
+        }
+        this.renderCompleteHandler(this.state.onRenderComplete);
     }
 
     render() {
