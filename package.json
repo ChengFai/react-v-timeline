@@ -1,5 +1,5 @@
 {
-  "name": "react17-vis-timeline",
+  "name": "react-v-timeline",
   "version": "1.0.0",
   "description": "A react component of vis-timeline",
   "main": "index.js",
@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/ChengFai/react17-vis-timeline.git"
+    "url": "https://github.com/ChengFai/react-v-timeline.git"
   },
   "keywords": [
     "react",
@@ -19,9 +19,9 @@
   "author": "Chengfai",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/ChengFai/react17-vis-timeline/issues"
+    "url": "https://github.com/ChengFai/react-v-timeline/issues"
   },
-  "homepage": "https://github.com/ChengFai/react17-vis-timeline#readme",
+  "homepage": "https://github.com/ChengFai/react-v-timeline#readme",
   "dependencies": {
     "babel-cli": "^6.26.0",
     "react": ">=17.0.2",

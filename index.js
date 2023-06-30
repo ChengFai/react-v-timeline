@@ -65,7 +65,7 @@ class Timeline extends React.Component {
     renderCompleteHandler(callback) {
         // StackOverflow: https://stackoverflow.com/questions/34535989/getting-a-callback-after-visjs-finishes-loading-chart
         // The visualizations of vis.js should load synchronously so there is no need for a callback.
-        if (typeof callback === 'function') {
+        if (callback && typeof callback === 'function') {
             let timer = setTimeout(() => {
                 callback(this.instance);
                 clearTimeout(timer);
@@ -85,7 +85,7 @@ class Timeline extends React.Component {
         } else {
             this.instance = new Timeline(containerDom, _items, groups, options);
         }
-        this.renderCompleteHandler(this.state.onRenderComplete);
+        this.renderCompleteHandler(this.props.onRenderComplete);
     }
 
     render() {
