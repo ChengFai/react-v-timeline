@@ -1,0 +1,35 @@
+{
+  "name": "react17-vis-timeline",
+  "version": "1.0.0",
+  "description": "A react component of vis-timeline",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ChengFai/react17-vis-timeline.git"
+  },
+  "keywords": [
+    "react",
+    "visjs",
+    "vis-timeline",
+    "visualization"
+  ],
+  "author": "Chengfai",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ChengFai/react17-vis-timeline/issues"
+  },
+  "homepage": "https://github.com/ChengFai/react17-vis-timeline#readme",
+  "dependencies": {
+    "babel-cli": "^6.26.0",
+    "react": "^17.0.2",
+    "vis-timeline": "^7.7.2",
+    "moment": "^2.29.4"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.22.5",
+    "babel-loader": "^9.1.2"
+  }
+}
