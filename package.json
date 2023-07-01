@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/ChengFai/react-v-timeline.git"
+    "url": "git+https://github.com/ChengFai/react-v-timeline.git"
   },
   "keywords": [
     "react",
@@ -30,7 +30,12 @@
     "vis-timeline": "^7.7.2"
   },
   "devDependencies": {
+    "@babel/cli": "^7.22.5",
     "@babel/core": "^7.22.5",
+    "@babel/preset-env": "^7.22.5",
     "babel-loader": "^9.1.2"
+  },
+  "directories": {
+    "test": "test"
   }
 }

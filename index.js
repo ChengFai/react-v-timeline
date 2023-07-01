@@ -2,100 +2,192 @@ import React from "react";
 import PropTypes from 'prop-types';
 
 import { DataSet, Timeline } from "vis-timeline/standalone";
+import 'vis-timeline/styles/vis-timeline-graph2d.css';
 import moment from 'moment';
+import difference from 'lodash/difference'
+import intersection from 'lodash/intersection'
+import each from 'lodash/each'
+import assign from 'lodash/assign'
+import omit from 'lodash/omit'
+import keys from 'lodash/keys'
+import isEqual from 'lodash/isEqual'
 
-import "vis-timeline/styles/vis-timeline-graph2d.css";
-
-
-const no_op = () => { };
-
-const eventsType = [
-    'currentTimeTick',
-    'click',
-    'contextmenu',
-    'doubleClick',
-    'dragOver',
-    'drop',
-    'mouseDown',
-    'mouseMove',
-    'mouseUp',
-    'mouseOver',
-    'groupDragged',
-    'changed',
-    'rangechange',
-    'rangechanged',
-    'select',
-    'itemover',
-    'itemout',
-    'timechange',
-    'timechanged',
-    'markerchange',
-    'markerchanged',
+const noop = function() {}
+const events = [
+  'currentTimeTick',
+  'click',
+  'contextmenu',
+  'doubleClick',
+  'groupDragged',
+  'changed',
+  'rangechange',
+  'rangechanged',
+  'select',
+  'timechange',
+  'timechanged',
+  'mouseOver',
+  'mouseMove',
+  'itemover',
+  'itemout',
 ]
 
-class Timeline extends React.Component {
-    constructor(props) {
-        super(props);
-        this.state = {
-            items: null,
-            groups: [],
-            options: {},
-            locale: "en",
-            timezones:"UTC",
-            styles: {},
-            onRenderComplete: () => { },
-        };
-        this.eventsType = eventsType;
-        this.containerRef = React.createRef();
-        this.instance = null;
-        this.renderCompleteHandler = this.renderCompleteHandler.bind(this);
+const eventPropTypes = {}
+const eventDefaultProps = {}
+
+events.forEach(event => {
+  eventPropTypes[event] = PropTypes.func ;
+  eventDefaultProps[`${event}Handler`] = noop
+})
+
+export default class Timeline extends Component {
+  constructor(props) {
+    super(props)
+    this.state = {
+      customTimes: [],
+    }
+    this.containerRef = React.createRef()
+  }
+
+  componentWillUnmount() {
+    this.$el.destroy()
+  }
+
+  componentDidMount() {
+    this.$el = new Timeline(
+      this.containerRef.current, undefined, this.props.options)
+
+    events.forEach(event => {
+      this.$el.on(event, this.props[`${event}Handler`])
+    })
+
+    this.init()
+  }
+
+  componentDidUpdate() {
+    this.init()
+  }
+
+  shouldComponentUpdate(nextProps) {
+    const { items, groups, options, selection, customTimes } = this.props
+
+    const itemsChange = !isEqual(items, nextProps.items)
+    const groupsChange = !isEqual(groups, nextProps.groups)
+    const optionsChange = !isEqual(options, nextProps.options)
+    const customTimesChange = !isEqual(customTimes, nextProps.customTimes)
+    const selectionChange = !isEqual(selection, nextProps.selection)
+
+    return (
+      itemsChange ||
+      groupsChange ||
+      optionsChange ||
+      customTimesChange ||
+      selectionChange
+    )
+  }
+
+  init() {
+    const {
+      items,
+      groups,
+      options,
+      selection,
+      selectionOptions = {},
+      customTimes,
+      animate = true,
+      currentTime,
+    } = this.props
+
+    let timelineOptions = options
+
+    if (animate) {
+      // If animate option is set, we should animate the timeline to any new
+      // start/end values instead of jumping straight to them
+      timelineOptions = omit(options, 'start', 'end')
+
+      this.$el.setWindow(options.start, options.end, {
+        animation: animate,
+      })
     }
 
-    static getDerivedStateFromProps(nextProps, prevState) {
-        const { items, groups, options, locale, timezones, styles, onRenderComplete } = nextProps;
-        const _items = new DataSet(items);
-        return {
-            items: _items,
-            groups,
-            options,
-            locale,
-            timezones,
-            styles,
-            onRenderComplete,
-        };
+    this.$el.setOptions(timelineOptions)
+
+    if (groups.length > 0) {
+      const groupsDataset = new DataSet()
+      groupsDataset.add(groups)
+      this.$el.setGroups(groupsDataset)
     }
 
-    renderCompleteHandler(callback) {
-        // StackOverflow: https://stackoverflow.com/questions/34535989/getting-a-callback-after-visjs-finishes-loading-chart
-        // The visualizations of vis.js should load synchronously so there is no need for a callback.
-        if (callback && typeof callback === 'function') {
-            let timer = setTimeout(() => {
-                callback(this.instance);
-                clearTimeout(timer);
-            }, 0);
-        }
+    this.$el.setItems(items)
+    this.$el.setSelection(selection, selectionOptions)
+
+    if (currentTime) {
+      this.$el.setCurrentTime(currentTime)
     }
 
-    componentDidMount() {
-        const { groups, options, items } = this.state;
-        const _items = new DataSet(items);
-        const containerDom = this.containerRef.current;
-        if(!containerDom) {
-            console.error("Timeline container is not defined");
-            return;
-        } else if(!groups) {
-            this.instance = new Timeline(containerDom, _items, options);
-        } else {
-            this.instance = new Timeline(containerDom, _items, groups, options);
-        }
-        this.renderCompleteHandler(this.props.onRenderComplete);
-    }
+    // diff the custom times to decipher new, removing, updating
+    const customTimeKeysPrev = keys(this.state.customTimes)
+    const customTimeKeysNew = keys(customTimes)
+    const customTimeKeysToAdd = difference(
+      customTimeKeysNew,
+      customTimeKeysPrev
+    )
+    const customTimeKeysToRemove = difference(
+      customTimeKeysPrev,
+      customTimeKeysNew
+    )
+    const customTimeKeysToUpdate = intersection(
+      customTimeKeysPrev,
+      customTimeKeysNew
+    )
 
-    render() {
-        return (
-            <div ref={this.containerRef} style={this.styles} />
-        );
-    }
+    // NOTE this has to be in arrow function so context of `this` is based on
+    // this.$el and not `each`
+    each(customTimeKeysToRemove, id => this.$el.removeCustomTime(id))
+    each(customTimeKeysToAdd, id => {
+      const datetime = customTimes[id]
+      this.$el.addCustomTime(datetime, id)
+    })
+    each(customTimeKeysToUpdate, id => {
+      const datetime = customTimes[id]
+      this.$el.setCustomTime(datetime, id)
+    })
+
+    // store new customTimes in state for future diff
+    this.setState({ customTimes })
+  }
+
+  render() {
+    return <div ref= {this.containerRef} />
+  }
 }
 
-export default Timeline;
+Timeline.propTypes = assign(
+  {
+    items: PropTypes.array,
+    groups: PropTypes.array,
+    options: PropTypes.object,
+    selection: PropTypes.array,
+    customTimes: PropTypes.shape({
+      datetime: PropTypes.instanceOf(Date),
+      id: PropTypes.string,
+    }),
+    animate: PropTypes.oneOfType([PropTypes.bool, PropTypes.object]),
+    currentTime: PropTypes.oneOfType([
+      PropTypes.string,
+      PropTypes.instanceOf(Date),
+      PropTypes.number,
+    ]),
+  },
+  eventPropTypes
+)
+
+Timeline.defaultProps = assign(
+  {
+    items: [],
+    groups: [],
+    options: {},
+    selection: [],
+    customTimes: {},
+  },
+  eventDefaultProps
+)
