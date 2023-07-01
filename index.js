@@ -6,6 +6,9 @@ import moment from 'moment';
 
 import "vis-timeline/styles/vis-timeline-graph2d.css";
 
+
+const no_op = () => { };
+
 const eventsType = [
     'currentTimeTick',
     'click',
